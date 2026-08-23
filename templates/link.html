@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+
+{% block title %}Red Line - About Blood Donation{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>About Blood Donation</h1>
+    <p>Understanding the importance of giving blood.</p>
+</div>
+
+<div class="container" style="margin-bottom: 4rem;">
+    <div class="card">
+        <img src="{{ url_for('static', filename='images/Blood_Donation_at_Hospital.jpg') }}" alt="Blood Donation" style="width: 100%; max-height: 400px; object-fit: cover; border-radius: var(--radius-sm); margin-bottom: 2rem;">
+        
+        <h2>Why Donate Blood?</h2>
+        <p style="margin-top: 1rem; line-height: 1.6; color: var(--text);">
+            A blood donation occurs when a person voluntarily has blood drawn and used for transfusions and/or made into biopharmaceutical medications by a process called fractionation. Donation may be of whole blood, or of specific components directly. Blood banks often participate in the collection process as well as the procedures that follow it.
+        </p>
+        <p style="margin-top: 1rem; line-height: 1.6; color: var(--text);">
+            Today in the developed world, most blood donors are unpaid volunteers who donate blood for a community supply. In some countries, established supplies are limited and donors usually give blood when family or friends need a transfusion. Many donors donate for several reasons, such as a form of charity, general awareness regarding the demand for blood, increased confidence in oneself, helping a personal friend or relative, and social pressure.
+        </p>
+    </div>
+</div>
+{% endblock %}

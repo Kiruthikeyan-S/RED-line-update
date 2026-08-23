@@ -1,0 +1,110 @@
+{% extends 'base.html' %}
+
+{% block title %}User Profile - Red Line{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 900px; padding: 3rem 1rem;">
+    <!-- Profile Header Card -->
+    <div class="card" style="text-align: center; padding: 3rem 2rem; margin-bottom: 2rem; border-top: 5px solid var(--primary);">
+        <div style="width: 100px; height: 100px; background: var(--primary-light); color: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem auto; font-size: 3rem; font-weight: bold;">
+            {{ user.username[0].upper() if user and user.username else 'U' }}
+        </div>
+        <h1 style="font-size: 2.2rem; margin-bottom: 0.5rem;">{{ user.username }}</h1>
+        <p style="color: var(--text-light); font-size: 1.1rem; margin-bottom: 1rem;">{{ user.email }}</p>
+        
+        <div style="display: inline-block; margin-bottom: 1.5rem;">
+            <span class="badge badge-{{ user.role }}" style="font-size: 1rem; padding: 0.4rem 1.2rem; border-radius: 20px;">
+                Role: {{ 'Administrator' if user.role == 'admin' else 'Blood Donor / Recipient' }}
+            </span>
+        </div>
+
+        <div style="display: flex; justify-content: center; gap: 2rem; max-width: 500px; margin: 1.5rem auto 0 auto; border-top: 1px solid var(--border); padding-top: 1.5rem;">
+            <div style="text-align: center;">
+                <span style="font-size: 1.8rem; font-weight: 700; color: var(--primary);">{{ donations|length }}</span>
+                <p style="font-size: 0.9rem; color: var(--text-light);">Donations</p>
+            </div>
+            <div style="text-align: center; border-left: 1px solid var(--border); padding-left: 2rem;">
+                <span style="font-size: 1.8rem; font-weight: 700; color: var(--primary);">{{ requests|length }}</span>
+                <p style="font-size: 0.9rem; color: var(--text-light);">Blood Requests</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- User Donations History -->
+    {% if donations %}
+    <div class="card" style="margin-bottom: 2rem;">
+        <h3 style="font-size: 1.4rem; color: var(--primary); margin-bottom: 1rem;">🩸 My Donation History</h3>
+        <div style="overflow-x: auto;">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Record ID</th>
+                        <th>Name</th>
+                        <th>Blood Type</th>
+                        <th>Age</th>
+                        <th>Weight</th>
+                        <th>Medical History</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for d in donations %}
+                    <tr>
+                        <td>#DON-{{ d.id }}</td>
+                        <td>{{ d.name }}</td>
+                        <td><strong style="color: var(--primary);">{{ d.blood_type }}</strong></td>
+                        <td>{{ d.age }} yrs</td>
+                        <td>{{ d.weight }} kg</td>
+                        <td>{{ d.medical_conditions or 'None' }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- User Requests History -->
+    {% if requests %}
+    <div class="card" style="margin-bottom: 2rem;">
+        <h3 style="font-size: 1.4rem; color: var(--primary); margin-bottom: 1rem;">🚨 My Blood Requests</h3>
+        <div style="overflow-x: auto;">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Request ID</th>
+                        <th>Name</th>
+                        <th>Blood Type Required</th>
+                        <th>Phone</th>
+                        <th>Address</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for r in requests %}
+                    <tr>
+                        <td>#REQ-{{ r.id }}</td>
+                        <td>{{ r.name }}</td>
+                        <td><strong style="color: var(--primary);">{{ r.blood_type }}</strong></td>
+                        <td>{{ r.phone }}</td>
+                        <td>{{ r.address }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- PROMINENT BIG LOGOUT SECTION WITH MENU SPACE -->
+    <div class="card" style="text-align: center; padding: 3.5rem 2rem; margin-top: 3rem; background: #fff5f5; border: 2px dashed #fecaca;">
+        <h3 style="font-size: 1.6rem; margin-bottom: 0.5rem; color: var(--text);">Account Options</h3>
+        <p style="color: var(--text-light); margin-bottom: 2rem; font-size: 1.05rem;">
+            Ready to end your current session? Click the button below to log out safely.
+        </p>
+        <div style="margin: 1.5rem 0;">
+            <a href="{{ url_for('logout') }}" class="btn btn-primary btn-lg" style="padding: 1.2rem 4.5rem; font-size: 1.3rem; font-weight: 700; border-radius: 50px; box-shadow: 0 4px 18px rgba(220, 38, 38, 0.35);">
+                🚪 Log Out
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+
+{% block title %}Red Line - Donation Records{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Blood Donation Records</h1>
+    <p>Admin Dashboard</p>
+</div>
+
+<div class="container" style="margin-bottom: 4rem;">
+    {% if donations %}
+        <div style="overflow-x: auto;">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Gender</th>
+                        <th>Email</th>
+                        <th>Phone</th>
+                        <th>Blood Type</th>
+                        <th>Age</th>
+                        <th>Weight</th>
+                        <th>Medical Conditions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in donations %}
+                    <tr>
+                        <td>{{ item.name }}</td>
+                        <td>{{ item.gender }}</td>
+                        <td>{{ item.email }}</td>
+                        <td>{{ item.phone }}</td>
+                        <td><span class="badge badge-admin">{{ item.blood_type }}</span></td>
+                        <td>{{ item.age }}</td>
+                        <td>{{ item.weight }}</td>
+                        <td>{{ item.medical_conditions or '-' }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="empty-state">
+            <h3 style="margin-bottom: 1rem;">No Records Found</h3>
+            <p>There are currently no blood donation records in the system.</p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

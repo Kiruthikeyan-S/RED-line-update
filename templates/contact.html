@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+
+{% block title %}Need Blood - Red Line{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 800px; padding: 3rem 1rem;">
+    <div style="text-align: center; margin-bottom: 2.5rem;">
+        <h1 style="font-size: 2.5rem; font-weight: 700; color: var(--primary); margin-bottom: 0.5rem;">🚨 Submit Blood Request</h1>
+        <p style="color: var(--text-light); font-size: 1.1rem;">Submit your emergency blood requirement to find compatible nearby donors.</p>
+    </div>
+
+    <div class="card" style="padding: 2.5rem;">
+        <form action="{{ url_for('contact') }}" method="POST" enctype="multipart/form-data" onsubmit="return rValidate()">
+            
+            <div class="form-group">
+                <label class="form-label" for="fname">Patient / Recipient Full Name *</label>
+                <input type="text" name="fname" id="fname" required class="form-control" placeholder="Enter recipient full name">
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Gender *</label>
+                <div class="form-radio-group">
+                    <label style="cursor: pointer; display: flex; align-items: center; gap: 6px;"><input type="radio" name="gender" value="Male" checked> Male</label>
+                    <label style="cursor: pointer; display: flex; align-items: center; gap: 6px;"><input type="radio" name="gender" value="Female"> Female</label>
+                    <label style="cursor: pointer; display: flex; align-items: center; gap: 6px;"><input type="radio" name="gender" value="Others"> Others</label>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="femail">Contact E-mail Address *</label>
+                <input type="email" name="femail" id="femail" required class="form-control" placeholder="contact@example.com">
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="fphone">Contact Phone Number *</label>
+                <input type="tel" name="fphone" id="fphone" required class="form-control" placeholder="e.g. +91 9876543210">
+            </div>
+
+            <!-- CLEAN DROPDOWN SELECT FOR REQUIRED BLOOD TYPE -->
+            <div class="form-group">
+                <label class="form-label" for="ftype">Required Blood Group *</label>
+                <select name="ftype" id="ftype" class="form-control" required style="font-size: 1.05rem; font-weight: 600; padding: 0.85rem; border-radius: var(--radius-sm);">
+                    <option value="" disabled selected>-- Choose Required Blood Group --</option>
+                    <option value="A+">A+</option>
+                    <option value="A-">A-</option>
+                    <option value="B+">B+</option>
+                    <option value="B-">B-</option>
+                    <option value="O+">O+</option>
+                    <option value="O-">O-</option>
+                    <option value="AB+">AB+</option>
+                    <option value="AB-">AB-</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="fdetails">Hospital / Delivery Address *</label>
+                <textarea name="fdetails" id="fdetails" rows="4" required class="form-control" placeholder="Enter complete hospital address, room number, and emergency contact details"></textarea>
+            </div>
+
+            <!-- DOCTOR REQUISITION / CERTIFICATE SECTION -->
+            <div class="form-group" style="background: #f0fdf4; padding: 1.5rem; border-radius: var(--radius-sm); border: 1px solid #bbf7d0; margin-bottom: 2rem;">
+                <label class="form-label" style="font-weight: 700; color: #166534; font-size: 1.05rem; margin-bottom: 0.5rem;">
+                    📜 Doctor Prescription / Medical Approval Document (Optional)
+                </label>
+                <p style="font-size: 0.9rem; color: #15803d; margin-bottom: 1rem;">
+                    Attach the doctor's blood requisition form or approval certificate if available.
+                </p>
+                <input type="file" name="id_proof" id="id_proof" class="form-control" style="background: var(--white); margin-bottom: 1rem;">
+                
+                <div style="background: var(--white); padding: 1rem; border-radius: 8px; border: 1px dashed #86efac; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+                    <span style="font-size: 0.9rem; color: var(--text);">Need an official Doctor Medical Certificate form template?</span>
+                    <a href="{{ url_for('download_certificate') }}" class="btn btn-secondary btn-sm" style="font-weight: 600;">
+                        📥 Download Doctor Certificate Template
+                    </a>
+                </div>
+            </div>
+
+            <div style="text-align: center; margin-top: 2rem;">
+                <button type="submit" class="btn btn-primary btn-lg" style="width: 100%; max-width: 400px; font-weight: 700; padding: 1rem 2rem; font-size: 1.2rem; box-shadow: 0 4px 15px rgba(220, 38, 38, 0.3);">
+                    Find Compatible Donors
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{{ url_for('static', filename='js/rvalid.js') }}"></script>
+{% endblock %}

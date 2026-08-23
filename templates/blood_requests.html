@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+
+{% block title %}Red Line - Request Records{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Blood Request Records</h1>
+    <p>Admin Dashboard</p>
+</div>
+
+<div class="container" style="margin-bottom: 4rem;">
+    {% if requests %}
+        <div style="overflow-x: auto;">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Gender</th>
+                        <th>Email</th>
+                        <th>Phone</th>
+                        <th>Blood Type</th>
+                        <th>Address</th>
+                        <th>ID Proof</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for req in requests %}
+                    <tr>
+                        <td>{{ req.name }}</td>
+                        <td>{{ req.gender }}</td>
+                        <td>{{ req.email }}</td>
+                        <td>{{ req.phone }}</td>
+                        <td><span class="badge badge-admin">{{ req.blood_type }}</span></td>
+                        <td>{{ req.address }}</td>
+                        <td>
+                            {% if req.id_proof %}
+                                <a href="{{ url_for('static', filename='uploads/' + req.id_proof) }}" target="_blank" class="btn btn-sm btn-secondary">View ID</a>
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="empty-state">
+            <h3 style="margin-bottom: 1rem;">No Records Found</h3>
+            <p>There are currently no blood request records in the system.</p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

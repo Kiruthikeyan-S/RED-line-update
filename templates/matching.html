@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+
+{% block title %}Red Line - Matching Donors{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Matching Donors for {{ recipient }}</h1>
+    <p>Available donors matching the required blood type.</p>
+</div>
+
+<div class="container" style="margin-bottom: 4rem;">
+    {% if donors %}
+        <div style="overflow-x: auto;">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Phone Number</th>
+                        <th>Blood Group</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for donor in donors %}
+                    <tr>
+                        <td>{{ donor.name }}</td>
+                        <td>{{ donor.phone }}</td>
+                        <td><span class="badge badge-client">{{ donor.blood_group }}</span></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="empty-state">
+            <h3 style="margin-bottom: 1rem;">No Donors Found</h3>
+            <p>Unfortunately, there are currently no matching donors available for this blood type.</p>
+        </div>
+    {% endif %}
+    
+    <div style="text-align: center; margin-top: 2rem;">
+        <a href="{{ url_for('index') }}" class="btn btn-secondary">Back to Home</a>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Red Line{% endblock %}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/modern.css') }}">
+    <style>
+        header { background: var(--white); box-shadow: var(--shadow); position: sticky; top: 0; z-index: 1000; padding: 0.6rem 0; }
+        .nav-container { display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 40px; max-width: 1400px; margin: 0 auto; }
+        .logo img { height: 70px; max-width: 260px; object-fit: contain; }
+        .nav-links { display: flex; gap: 4rem; align-items: center; list-style: none; margin: 0; padding: 0; }
+        .nav-links a { text-decoration: none; color: var(--text); font-weight: 600; font-size: 1.15rem; transition: color 0.3s; }
+        .nav-links a:hover { color: var(--primary); }
+        .nav-right { display: flex; gap: 2rem; align-items: center; }
+        .dropdown { position: relative; }
+        .dropdown-content { display: none; position: absolute; background: var(--white); box-shadow: var(--shadow-lg); min-width: 170px; border-radius: var(--radius-sm); top: 100%; right: 0; padding: 0.5rem 0; z-index: 100; border: 1px solid var(--border); }
+        .dropdown:hover .dropdown-content { display: block; }
+        .dropdown-content a { display: block; padding: 0.6rem 1.2rem; text-decoration: none; color: var(--text); font-weight: 500; }
+        .dropdown-content a:hover { background: var(--bg); color: var(--primary); }
+        
+        /* ROUND PROFILE AVATAR BUTTON */
+        .profile-avatar-btn { display: flex; align-items: center; justify-content: center; text-decoration: none; transition: transform 0.2s, box-shadow 0.2s; }
+        .profile-avatar-btn:hover { transform: scale(1.08); }
+        .avatar-circle { width: 48px; height: 48px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), #b91c1c); color: var(--white); font-weight: 700; font-size: 1.2rem; display: flex; align-items: center; justify-content: center; box-shadow: 0 3px 10px rgba(220, 38, 38, 0.3); border: 2px solid var(--white); }
+        
+        footer { background: var(--white); padding: 2rem 0; text-align: center; border-top: 1px solid var(--border); margin-top: auto; }
+        .social-links { display: flex; justify-content: center; gap: 1.5rem; margin-bottom: 1rem; }
+        .social-links img { height: 28px; opacity: 0.85; transition: opacity 0.3s; }
+        .social-links img:hover { opacity: 1; }
+        .flash-messages { padding: 1rem; max-width: 1200px; margin: 0 auto; }
+        .alert { padding: 1rem 1.5rem; margin-bottom: 1rem; border-radius: var(--radius-sm); display: flex; justify-content: space-between; align-items: center; font-weight: 500; }
+        .alert-success { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
+        .alert-warning { background: #fef08a; color: #854d0e; border: 1px solid #fde047; }
+        .alert-danger { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
+        .alert-info { background: #dbeafe; color: #1e40af; border: 1px solid #bfdbfe; }
+        .close-btn { cursor: pointer; background: none; border: none; font-size: 1.25rem; }
+    </style>
+    {% block extra_head %}{% endblock %}
+</head>
+<body style="display: flex; flex-direction: column; min-height: 100vh;">
+    <header>
+        <div class="nav-container">
+            <a href="{{ url_for('index') }}" class="logo">
+                <img src="{{ url_for('static', filename='images/one blood logo.png') }}" alt="Red Line Logo">
+            </a>
+            <ul class="nav-links">
+                <li><a href="{{ url_for('index') }}">Home</a></li>
+                <li><a href="{{ url_for('map') }}">Map</a></li>
+                <li><a href="{{ url_for('contact') }}">Need Blood</a></li>
+                <li><a href="{{ url_for('donate') }}">Donate Blood</a></li>
+            </ul>
+            <div class="nav-right">
+                {% if session.get('role') == 'admin' %}
+                    <div class="dropdown">
+                        <a href="#" class="btn btn-secondary" style="font-weight: 600;">Dashboard ▼</a>
+                        <div class="dropdown-content">
+                            <a href="{{ url_for('view_donations') }}">Donations</a>
+                            <a href="{{ url_for('view_requests') }}">Requests</a>
+                        </div>
+                    </div>
+                {% endif %}
+                
+                {% if session.get('user_id') %}
+                    <!-- ROUND PROFILE ICON BUTTON (No Logout button in navbar) -->
+                    <a href="{{ url_for('profile') }}" class="profile-avatar-btn" title="View Profile ({{ session.get('username') }})">
+                        <div class="avatar-circle">
+                            {{ session.get('username')[0].upper() if session.get('username') else 'U' }}
+                        </div>
+                    </a>
+                {% else %}
+                    <a href="{{ url_for('login') }}" class="btn btn-secondary" style="font-weight: 600;">Login</a>
+                    <a href="{{ url_for('signup') }}" class="btn btn-primary" style="font-weight: 600;">Sign Up</a>
+                {% endif %}
+            </div>
+        </div>
+    </header>
+
+    <div class="flash-messages">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category if category != 'error' else 'danger' }}">
+                        <span>{{ message }}</span>
+                        <button class="close-btn" onclick="this.parentElement.style.display='none';">&times;</button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </div>
+
+    <main style="flex: 1;">
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer>
+        <div class="container">
+            <div class="social-links">
+                <a href="https://facebook.com" target="_blank"><img src="{{ url_for('static', filename='images/facebook.png') }}" alt="Facebook"></a>
+                <a href="https://instagram.com" target="_blank"><img src="{{ url_for('static', filename='images/instagram.png') }}" alt="Instagram"></a>
+                <a href="https://twitter.com" target="_blank"><img src="{{ url_for('static', filename='images/twitter.png') }}" alt="Twitter"></a>
+            </div>
+            <p style="color: var(--text-light); font-size: 0.9rem;">Red Line &copy; 2026 | All rights reserved</p>
+        </div>
+    </footer>
+
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>

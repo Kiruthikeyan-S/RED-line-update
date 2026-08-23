@@ -1,0 +1,34 @@
+================================================================================
+                    RED LINE BLOOD DONATION PLATFORM
+                   MEDICAL FITNESS & DOCTOR APPROVAL FORM
+================================================================================
+
+PATIENT / DONOR INFORMATION:
+--------------------------------------------------------------------------------
+Full Name: ____________________________________________________________________
+Age: ___________   Gender: [  ] Male   [  ] Female   [  ] Other
+Blood Type: [  ] A+   [  ] A-   [  ] B+   [  ] B-   [  ] O+   [  ] O-   [  ] AB+   [  ] AB-
+Contact Phone: ___________________________   Email: ____________________________
+Address: ______________________________________________________________________
+
+EXAMINING PHYSICIAN MEDICAL EVALUATION:
+--------------------------------------------------------------------------------
+1. Hemoglobin Level (g/dL): ___________ (Min 12.5 g/dL required)
+2. Blood Pressure (mmHg): ____________ / ____________
+3. Pulse Rate (bpm): ___________   Body Weight (kg): ___________
+4. Known Medical Conditions / Chronic Illnesses:
+   [  ] None   [  ] Diabetes   [  ] Hypertension   [  ] Other: ________________
+
+PHYSICIAN APPROVAL & DECLARATION:
+--------------------------------------------------------------------------------
+I hereby certify that I have medically examined the individual named above 
+and find them physically FIT and APPROVED to perform blood donation / receive 
+blood transfusion in accordance with standard medical guidelines.
+
+Doctor's Full Name: ____________________________________________________________
+Medical License No: ___________________________________________________________
+Hospital / Clinic Name: ________________________________________________________
+Doctor's Signature: _______________________ Date: ______________________________
+
+                               [ HOSPITAL STAMP ]
+================================================================================

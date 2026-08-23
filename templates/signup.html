@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+
+{% block title %}Red Line - Sign Up{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="card auth-card">
+        <h2>Create Account</h2>
+        <p class="subtitle">Join the Red Line community</p>
+        
+        {% if error %}
+            <div class="alert alert-danger">
+                <span>{{ error }}</span>
+                <button class="close-btn" onclick="this.parentElement.style.display='none'">&times;</button>
+            </div>
+        {% endif %}
+
+        <form action="{{ url_for('signup') }}" method="POST">
+            <div class="form-group">
+                <label class="form-label" for="email">Email</label>
+                <input type="email" class="form-control" id="email" name="email" required>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label" for="username">Username</label>
+                <input type="text" class="form-control" id="username" name="username" required>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label" for="password">Password</label>
+                <input type="password" class="form-control" id="password" name="password" required>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Account Type</label>
+                <div class="form-radio-group">
+                    <label>
+                        <input type="radio" name="role" value="client" checked> Donor / Recipient
+                    </label>
+                    <label>
+                        <input type="radio" name="role" value="admin"> Admin
+                    </label>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label style="display: flex; align-items: center; gap: 0.5rem;">
+                    <input type="checkbox" name="terms" required> I accept the terms and conditions
+                </label>
+            </div>
+            
+            <div class="form-group" style="text-align: center;">
+                <button type="submit" class="btn btn-primary btn-lg" style="width: 100%;">Create Account</button>
+            </div>
+        </form>
+        
+        <p style="text-align: center; margin-top: 1.5rem;">
+            Already have an account? <a href="{{ url_for('login') }}" style="color: var(--primary); text-decoration: none;">Log In</a>
+        </p>
+    </div>
+</div>
+{% endblock %}

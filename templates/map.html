@@ -1,0 +1,193 @@
+{% extends 'base.html' %}
+
+{% block title %}Real-Time Donors & Blood Banks Map - Red Line{% endblock %}
+
+{% block extra_head %}
+<!-- Leaflet CSS & JS for Live Interactive Map -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+    #interactive-map {
+        height: 550px;
+        width: 100%;
+        border-radius: var(--radius);
+        box-shadow: var(--shadow-lg);
+        border: 1px solid var(--border);
+        z-index: 1;
+    }
+    .map-controls {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+        flex-wrap: wrap;
+    }
+    .location-card {
+        padding: 1.2rem;
+        border-left: 4px solid var(--primary);
+        background: var(--white);
+        border-radius: var(--radius-sm);
+        box-shadow: var(--shadow);
+        margin-bottom: 1rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>📍 Real-Time Donors & Blood Banks Map</h1>
+    <p>View real-time registered donors, nearby blood banks, and emergency medical centers.</p>
+</div>
+
+<div class="container" style="margin-bottom: 4rem;">
+    <!-- Map Control Buttons & Search -->
+    <div class="map-controls">
+        <button onclick="locateUser()" class="btn btn-primary" style="font-weight: 600; display: flex; align-items: center; gap: 8px;">
+            <span class="material-symbols-outlined">my_location</span> Find My Real-Time Location
+        </button>
+        <button onclick="filterCenters('all')" class="btn btn-secondary" style="font-weight: 600;">Show All</button>
+        <button onclick="filterCenters('donor')" class="btn btn-secondary" style="font-weight: 600; background: var(--primary-light); color: var(--primary-dark);">🩸 Real-Time Donors</button>
+        <button onclick="filterCenters('bank')" class="btn btn-secondary" style="font-weight: 600;">🏥 Blood Banks</button>
+        <button onclick="filterCenters('hospital')" class="btn btn-secondary" style="font-weight: 600;">🏥 Emergency Hospitals</button>
+    </div>
+
+    <!-- Live Interactive Map Container -->
+    <div id="interactive-map"></div>
+
+    <!-- Center Information Cards Grid -->
+    <div style="margin-top: 3rem;">
+        <h3 style="font-size: 1.6rem; margin-bottom: 1.5rem; color: var(--text);">Verified Medical Facilities & Centers</h3>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem;">
+            <div class="location-card">
+                <h4 style="color: var(--primary); font-size: 1.2rem; margin-bottom: 0.5rem;">🏥 Red Line Central Blood Bank</h4>
+                <p style="font-size: 0.95rem; color: var(--text-light); margin-bottom: 0.5rem;">123 Lifeline Avenue, City Center</p>
+                <p style="font-size: 0.9rem;"><strong>Stock Available:</strong> A+, B+, O+, AB+</p>
+                <p style="font-size: 0.9rem;"><strong>Emergency Phone:</strong> +91 98765 43210</p>
+            </div>
+
+            <div class="location-card" style="border-left-color: #0284c7;">
+                <h4 style="color: #0284c7; font-size: 1.2rem; margin-bottom: 0.5rem;">🏥 City General Hospital & Transfusion Unit</h4>
+                <p style="font-size: 0.95rem; color: var(--text-light); margin-bottom: 0.5rem;">45 Emergency Medical Road</p>
+                <p style="font-size: 0.9rem;"><strong>Stock Available:</strong> O-, A-, B+</p>
+                <p style="font-size: 0.9rem;"><strong>Emergency Phone:</strong> +91 98765 11223</p>
+            </div>
+
+            <div class="location-card" style="border-left-color: #166534;">
+                <h4 style="color: #166534; font-size: 1.2rem; margin-bottom: 0.5rem;">🩸 Red Cross Blood Donation Camp</h4>
+                <p style="font-size: 0.95rem; color: var(--text-light); margin-bottom: 0.5rem;">Community Hall, Main Square</p>
+                <p style="font-size: 0.9rem;"><strong>Active Hours:</strong> 9:00 AM - 5:00 PM</p>
+                <p style="font-size: 0.9rem;"><strong>Status:</strong> Accepting All Donors</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    let map, userMarker;
+    let markers = [];
+
+    // Default center coordinates
+    const defaultLat = 13.0827;
+    const defaultLng = 80.2707;
+
+    // Fixed facility centers
+    const facilities = [
+        { name: "Red Line Central Blood Bank", lat: 13.0827, lng: 80.2707, type: "bank", address: "123 Lifeline Ave", phone: "+91 98765 43210" },
+        { name: "City General Hospital & Transfusion Unit", lat: 13.0900, lng: 80.2800, type: "hospital", address: "45 Emergency Med Rd", phone: "+91 98765 11223" },
+        { name: "Red Cross Donation Camp", lat: 13.0750, lng: 80.2600, type: "bank", address: "Community Hall, Main Sq", phone: "+91 98765 99887" },
+        { name: "Apollo Emergency Blood Depot", lat: 13.0600, lng: 80.2500, type: "hospital", address: "12 Greams Lane", phone: "+91 98765 77665" }
+    ];
+
+    let realTimeDonors = [];
+
+    function initLeafletMap() {
+        map = L.map('interactive-map').setView([defaultLat, defaultLng], 12);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        // Fetch real-time donor coordinates from backend API
+        fetch('/api/donors_location')
+            .then(res => res.json())
+            .then(data => {
+                realTimeDonors = data;
+                loadMarkers('all');
+            })
+            .catch(err => {
+                console.log("Could not load API donors:", err);
+                loadMarkers('all');
+            });
+    }
+
+    function loadMarkers(filterType) {
+        markers.forEach(m => map.removeLayer(m));
+        markers = [];
+
+        // 1. Plot fixed medical facilities
+        if (filterType === 'all' || filterType === 'bank' || filterType === 'hospital') {
+            facilities.forEach(f => {
+                if (filterType === 'all' || f.type === filterType) {
+                    const marker = L.marker([f.lat, f.lng]).addTo(map);
+                    marker.bindPopup(`
+                        <div style="font-family: Poppins, sans-serif; padding: 5px;">
+                            <h4 style="margin: 0 0 5px 0; color: #dc2626;">🏥 ${f.name}</h4>
+                            <p style="margin: 0; font-size: 13px;">${f.address}</p>
+                            <p style="margin: 3px 0 0 0; font-size: 12px; color: #555;">📞 ${f.phone}</p>
+                        </div>
+                    `);
+                    markers.push(marker);
+                }
+            });
+        }
+
+        // 2. Plot real-time registered donors
+        if (filterType === 'all' || filterType === 'donor') {
+            realTimeDonors.forEach(d => {
+                const donorMarker = L.marker([d.latitude, d.longitude]).addTo(map);
+                donorMarker.bindPopup(`
+                    <div style="font-family: Poppins, sans-serif; padding: 5px;">
+                        <h4 style="margin: 0 0 5px 0; color: #dc2626;">🩸 Real-Time Donor: ${d.name}</h4>
+                        <p style="margin: 0; font-size: 13px;"><strong>Blood Group:</strong> ${d.blood_type}</p>
+                        <p style="margin: 3px 0 0 0; font-size: 12px; color: #555;">📞 ${d.phone}</p>
+                    </div>
+                `);
+                markers.push(donorMarker);
+            });
+        }
+    }
+
+    function filterCenters(type) {
+        loadMarkers(type);
+    }
+
+    function locateUser() {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(position => {
+                const lat = position.coords.latitude;
+                const lng = position.coords.longitude;
+
+                map.setView([lat, lng], 14);
+
+                if (userMarker) {
+                    map.removeLayer(userMarker);
+                }
+
+                userMarker = L.marker([lat, lng], {
+                    title: "Your Real-Time Location"
+                }).addTo(map);
+
+                userMarker.bindPopup("<strong style='color: #0284c7;'>📍 Your Real-Time Location</strong>").openPopup();
+            }, () => {
+                alert("Geolocation failed or permission denied.");
+            });
+        } else {
+            alert("Your browser does not support geolocation.");
+        }
+    }
+
+    document.addEventListener("DOMContentLoaded", initLeafletMap);
+</script>
+{% endblock %}

@@ -1,0 +1,117 @@
+{% extends 'base.html' %}
+
+{% block title %}Donate Blood - Red Line{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 800px; padding: 3rem 1rem;">
+    <div style="text-align: center; margin-bottom: 2.5rem;">
+        <h1 style="font-size: 2.5rem; font-weight: 700; color: var(--primary); margin-bottom: 0.5rem;">🩸 Donor Registration</h1>
+        <p style="color: var(--text-light); font-size: 1.1rem;">Please provide accurate medical details to register as a voluntary blood donor.</p>
+    </div>
+
+    <div class="card" style="padding: 2.5rem;">
+        <form action="{{ url_for('donate') }}" method="POST" onsubmit="return dValidate()">
+            
+            <!-- Hidden inputs to store real-time donor coordinates -->
+            <input type="hidden" name="latitude" id="latitude">
+            <input type="hidden" name="longitude" id="longitude">
+
+            <div class="form-group">
+                <label class="form-label" for="fname">Full Name *</label>
+                <input type="text" name="fname" id="fname" required class="form-control" placeholder="Enter your full name">
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Gender *</label>
+                <div class="form-radio-group">
+                    <label style="cursor: pointer; display: flex; align-items: center; gap: 6px;"><input type="radio" name="gender" value="Male" checked> Male</label>
+                    <label style="cursor: pointer; display: flex; align-items: center; gap: 6px;"><input type="radio" name="gender" value="Female"> Female</label>
+                    <label style="cursor: pointer; display: flex; align-items: center; gap: 6px;"><input type="radio" name="gender" value="Others"> Others</label>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+                <div class="form-group">
+                    <label class="form-label" for="fage">Age (Years) *</label>
+                    <input type="number" name="fage" id="fage" min="18" max="65" required class="form-control" placeholder="e.g. 25 (Min 18)">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="fweight">Weight (kg) *</label>
+                    <input type="number" name="fweight" id="fweight" min="45" required class="form-control" placeholder="e.g. 65 (Min 45 kg)">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="femail">E-mail Address *</label>
+                <input type="email" name="femail" id="femail" required class="form-control" placeholder="yourname@example.com">
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="fphone">Phone Number *</label>
+                <input type="tel" name="fphone" id="fphone" required class="form-control" placeholder="e.g. +91 9876543210">
+            </div>
+
+            <!-- CLEAN DROPDOWN SELECT FOR BLOOD TYPE -->
+            <div class="form-group">
+                <label class="form-label" for="ftype">Select Your Blood Group *</label>
+                <select name="ftype" id="ftype" class="form-control" required style="font-size: 1.05rem; font-weight: 600; padding: 0.85rem; border-radius: var(--radius-sm);">
+                    <option value="" disabled selected>-- Choose Blood Group --</option>
+                    <option value="A+">A+</option>
+                    <option value="A-">A-</option>
+                    <option value="B+">B+</option>
+                    <option value="B-">B-</option>
+                    <option value="O+">O+</option>
+                    <option value="O-">O-</option>
+                    <option value="AB+">AB+</option>
+                    <option value="AB-">AB-</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="fdetails">Medical Conditions / History (Optional)</label>
+                <textarea name="fdetails" id="fdetails" rows="4" class="form-control" placeholder="Specify any previous illnesses, surgeries, or conditions (e.g. None)"></textarea>
+            </div>
+
+            <!-- DOCTOR CERTIFICATE / APPROVAL ATTACHMENT SECTION -->
+            <div class="form-group" style="background: #f0fdf4; padding: 1.5rem; border-radius: var(--radius-sm); border: 1px solid #bbf7d0; margin-bottom: 2rem;">
+                <label class="form-label" style="font-weight: 700; color: #166534; font-size: 1.05rem; margin-bottom: 0.5rem;">
+                    📜 Doctor Medical Certificate / Approval (Optional)
+                </label>
+                <p style="font-size: 0.9rem; color: #15803d; margin-bottom: 1rem;">
+                    You can attach your signed medical fitness certificate from a qualified physician.
+                </p>
+                <input type="file" name="id_proof" id="id_proof" class="form-control" style="background: var(--white); margin-bottom: 1rem;">
+                
+                <div style="background: var(--white); padding: 1rem; border-radius: 8px; border: 1px dashed #86efac; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+                    <span style="font-size: 0.9rem; color: var(--text);">Don't have a Doctor Certificate form yet?</span>
+                    <a href="{{ url_for('download_certificate') }}" class="btn btn-secondary btn-sm" style="font-weight: 600;">
+                        📥 Download Doctor Certificate Template
+                    </a>
+                </div>
+            </div>
+
+            <div style="text-align: center; margin-top: 2rem;">
+                <button type="submit" class="btn btn-primary btn-lg" style="width: 100%; max-width: 400px; font-weight: 700; padding: 1rem 2rem; font-size: 1.2rem; box-shadow: 0 4px 15px rgba(220, 38, 38, 0.3);">
+                    Register to Donate
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{{ url_for('static', filename='js/dvalid.js') }}"></script>
+<script>
+    // Automatically capture real-time donor coordinates via HTML5 Geolocation
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(function(position) {
+            document.getElementById('latitude').value = position.coords.latitude;
+            document.getElementById('longitude').value = position.coords.longitude;
+        }, function(err) {
+            console.log("Real-time geolocation warning:", err.message);
+        });
+    }
+</script>
+{% endblock %}
