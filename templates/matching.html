@@ -28,6 +28,10 @@
     <!-- Live Map showing donor locations relative to requester -->
     <div id="results-map"></div>
 
+    <!-- Distance info panel - shown when Track is clicked -->
+    <div id="track-info" style="display: none; align-items: center; gap: 12px; background: var(--white); padding: 1rem 1.5rem; border-radius: var(--radius-sm); box-shadow: var(--shadow); border-left: 4px solid var(--primary); margin-bottom: 2rem;">
+    </div>
+
     <div style="overflow-x: auto;">
         <table class="data-table">
             <thead>
@@ -130,15 +134,99 @@
         map.setView(bounds[0], 13);
     }
 
-    // Track a specific donor - zoom and highlight
-    function trackDonor(lat, lng, name) {
-        map.setView([lat, lng], 16);
-        L.popup()
-            .setLatLng([lat, lng])
-            .setContent('<strong style="color: #dc2626;">&#x1FA78; Tracking: ' + name + '</strong>')
-            .openOn(map);
-        // Scroll to map
-        document.getElementById('results-map').scrollIntoView({ behavior: 'smooth' });
+    // Haversine formula in JS to calculate distance in km
+    function haversineJS(lat1, lon1, lat2, lon2) {
+        var R = 6371;
+        var dLat = (lat2 - lat1) * Math.PI / 180;
+        var dLon = (lon2 - lon1) * Math.PI / 180;
+        var a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                Math.sin(dLon/2) * Math.sin(dLon/2);
+        var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        return (R * c).toFixed(2);
+    }
+
+    var routeLine = null; // Store current route line to remove on next track
+
+    // Track a specific donor - get user location, calculate distance, draw route, show info
+    function trackDonor(donorLat, donorLng, donorName) {
+        // Remove previous route line if any
+        if (routeLine) {
+            map.removeLayer(routeLine);
+            routeLine = null;
+        }
+
+        // Try to get the user's real-time location
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(function(position) {
+                var userLat = position.coords.latitude;
+                var userLng = position.coords.longitude;
+
+                // Calculate distance using Haversine shortest-path
+                var distKm = haversineJS(userLat, userLng, donorLat, donorLng);
+
+                // Draw route line from user to donor
+                routeLine = L.polyline(
+                    [[userLat, userLng], [donorLat, donorLng]],
+                    { color: '#dc2626', weight: 3, dashArray: '10, 8', opacity: 0.8 }
+                ).addTo(map);
+
+                // Add user marker if not already present
+                L.circleMarker([userLat, userLng], {
+                    radius: 10, fillColor: '#0284c7', color: '#fff', weight: 2, fillOpacity: 0.9
+                }).addTo(map).bindPopup('<strong style="color: #0284c7;">&#x1F4CD; You</strong>');
+
+                // Fit map to show both points
+                map.fitBounds([[userLat, userLng], [donorLat, donorLng]], { padding: [60, 60] });
+
+                // Show distance popup on donor
+                L.popup()
+                    .setLatLng([donorLat, donorLng])
+                    .setContent(
+                        '<div style="font-family: Poppins, sans-serif; text-align: center; min-width: 180px;">' +
+                        '<h4 style="margin: 0 0 8px 0; color: #dc2626;">&#x1FA78; ' + donorName + '</h4>' +
+                        '<div style="background: #dcfce7; padding: 8px 14px; border-radius: 20px; display: inline-block; margin-bottom: 6px;">' +
+                        '<span style="font-size: 1.3rem; font-weight: 700; color: #166534;">&#x1F4CD; ' + distKm + ' km</span>' +
+                        '</div>' +
+                        '<p style="margin: 6px 0 0 0; font-size: 11px; color: #64748b;">Shortest-path distance from your location</p>' +
+                        '</div>'
+                    )
+                    .openOn(map);
+
+                // Show distance info panel below map
+                var infoPanel = document.getElementById('track-info');
+                if (infoPanel) {
+                    infoPanel.style.display = 'flex';
+                    infoPanel.innerHTML =
+                        '<span class="material-symbols-outlined" style="font-size: 24px; color: #dc2626;">near_me</span>' +
+                        '<div>' +
+                        '<strong style="font-size: 1.1rem;">' + donorName + '</strong>' +
+                        '<span style="margin-left: 10px; background: #dcfce7; color: #166534; padding: 4px 12px; border-radius: 20px; font-weight: 700; font-size: 1rem;">&#x1F4CD; ' + distKm + ' km away</span>' +
+                        '<p style="margin: 4px 0 0 0; font-size: 0.85rem; color: #64748b;">Estimated via Haversine shortest-path algorithm</p>' +
+                        '</div>';
+                }
+
+                // Scroll to map
+                document.getElementById('results-map').scrollIntoView({ behavior: 'smooth' });
+
+            }, function(err) {
+                // Geolocation failed — just zoom to donor
+                map.setView([donorLat, donorLng], 15);
+                L.popup()
+                    .setLatLng([donorLat, donorLng])
+                    .setContent(
+                        '<div style="font-family: Poppins, sans-serif; text-align: center;">' +
+                        '<h4 style="margin: 0 0 5px 0; color: #dc2626;">&#x1FA78; ' + donorName + '</h4>' +
+                        '<p style="margin: 0; font-size: 12px; color: #991b1b;">Enable location to see distance</p>' +
+                        '</div>'
+                    )
+                    .openOn(map);
+                document.getElementById('results-map').scrollIntoView({ behavior: 'smooth' });
+            });
+        } else {
+            map.setView([donorLat, donorLng], 15);
+            document.getElementById('results-map').scrollIntoView({ behavior: 'smooth' });
+        }
     }
     {% endif %}
 </script>
