@@ -447,8 +447,10 @@ def seed_admin():
         db.session.commit()
         print("Default admin user created: admin / admin123")
 
+# Initialize database tables — runs on both gunicorn (production) and direct python (dev)
+with app.app_context():
+    db.create_all()
+    seed_admin()
+
 if __name__ == '__main__':
-    with app.app_context():
-        db.create_all()
-        seed_admin()
     app.run(debug=True)
