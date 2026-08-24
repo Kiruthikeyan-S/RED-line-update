@@ -61,10 +61,37 @@
                 <textarea name="fdetails" id="fdetails" rows="4" required class="form-control" placeholder="Enter complete hospital address, room number, and emergency contact details"></textarea>
             </div>
 
-            <!-- Location status indicator -->
-            <div id="location-status" style="background: #fef3c7; padding: 0.8rem 1.2rem; border-radius: var(--radius-sm); border: 1px solid #fcd34d; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 8px; font-size: 0.9rem;">
-                <span class="material-symbols-outlined" style="font-size: 18px;">location_searching</span>
-                <span>Detecting your location to find nearest donors...</span>
+            <!-- Location section with manual fallback -->
+            <div id="location-section" style="background: #fef3c7; padding: 1.2rem 1.5rem; border-radius: var(--radius-sm); border: 1px solid #fcd34d; margin-bottom: 1.5rem;">
+                <div id="location-status" style="display: flex; align-items: center; gap: 8px; font-size: 0.9rem; margin-bottom: 0;">
+                    <span class="material-symbols-outlined" style="font-size: 18px;">location_searching</span>
+                    <span>Detecting your location to find nearest donors...</span>
+                </div>
+                <!-- Manual location fallback - shown when GPS fails -->
+                <div id="manual-location" style="display: none; margin-top: 1rem;">
+                    <label class="form-label" style="font-weight: 600; font-size: 0.95rem; color: #92400e; margin-bottom: 0.5rem;">Select your city/area manually:</label>
+                    <select id="city-select" class="form-control" style="font-size: 1rem; padding: 0.7rem; border-radius: var(--radius-sm);" onchange="setManualLocation()">
+                        <option value="">-- Select Your City --</option>
+                        <option value="13.0827,80.2707">Chennai</option>
+                        <option value="12.9716,77.5946">Bangalore</option>
+                        <option value="11.0168,76.9558">Coimbatore</option>
+                        <option value="9.9252,78.1198">Madurai</option>
+                        <option value="10.7905,78.7047">Trichy</option>
+                        <option value="11.6643,78.1460">Salem</option>
+                        <option value="8.5241,76.9366">Thiruvananthapuram</option>
+                        <option value="9.9312,76.2673">Kochi</option>
+                        <option value="17.3850,78.4867">Hyderabad</option>
+                        <option value="19.0760,72.8777">Mumbai</option>
+                        <option value="28.7041,77.1025">Delhi</option>
+                        <option value="22.5726,88.3639">Kolkata</option>
+                        <option value="26.8467,80.9462">Lucknow</option>
+                        <option value="23.0225,72.5714">Ahmedabad</option>
+                        <option value="18.5204,73.8567">Pune</option>
+                        <option value="13.3409,77.1010">Tumkur</option>
+                        <option value="10.5276,76.2144">Thrissur</option>
+                        <option value="12.2958,76.6394">Mysore</option>
+                    </select>
+                </div>
             </div>
 
             <div style="text-align: center; margin-top: 2rem;">
@@ -80,23 +107,38 @@
 {% block extra_scripts %}
 <script src="{{ url_for('static', filename='js/rvalid.js') }}"></script>
 <script>
-    // Automatically capture real-time requester GPS coordinates for shortest-path sorting
+    function setManualLocation() {
+        var sel = document.getElementById('city-select');
+        if (sel.value) {
+            var parts = sel.value.split(',');
+            document.getElementById('latitude').value = parts[0];
+            document.getElementById('longitude').value = parts[1];
+            var statusEl = document.getElementById('location-status');
+            statusEl.style.display = 'flex';
+            statusEl.innerHTML = '<span class="material-symbols-outlined" style="font-size: 18px; color: #16a34a;">location_on</span><span style="color: #166534;"> Location set to <strong>' + sel.options[sel.selectedIndex].text + '</strong>. Donors will be sorted by nearest distance.</span>';
+            document.getElementById('location-section').style.background = '#dcfce7';
+            document.getElementById('location-section').style.borderColor = '#86efac';
+        }
+    }
+
+    // Try GPS first, fallback to manual selection
     if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(function(position) {
             document.getElementById('latitude').value = position.coords.latitude;
             document.getElementById('longitude').value = position.coords.longitude;
             var statusEl = document.getElementById('location-status');
-            statusEl.style.background = '#dcfce7';
-            statusEl.style.borderColor = '#86efac';
             statusEl.innerHTML = '<span class="material-symbols-outlined" style="font-size: 18px; color: #16a34a;">location_on</span><span style="color: #166534;"> Location detected! Donors will be sorted by nearest distance.</span>';
+            document.getElementById('location-section').style.background = '#dcfce7';
+            document.getElementById('location-section').style.borderColor = '#86efac';
         }, function(err) {
+            // GPS failed - show manual location selector
             var statusEl = document.getElementById('location-status');
-            statusEl.style.background = '#fee2e2';
-            statusEl.style.borderColor = '#fca5a5';
-            statusEl.innerHTML = '<span class="material-symbols-outlined" style="font-size: 18px; color: #dc2626;">location_off</span><span style="color: #991b1b;"> Location unavailable. Donors will be shown without distance sorting.</span>';
+            statusEl.innerHTML = '<span class="material-symbols-outlined" style="font-size: 18px; color: #92400e;">location_off</span><span style="color: #92400e;"> GPS unavailable. Please select your city below for distance sorting:</span>';
+            document.getElementById('manual-location').style.display = 'block';
         });
     } else {
-        document.getElementById('location-status').style.display = 'none';
+        document.getElementById('location-status').innerHTML = '<span class="material-symbols-outlined" style="font-size: 18px; color: #92400e;">location_off</span><span style="color: #92400e;"> GPS not supported. Please select your city below:</span>';
+        document.getElementById('manual-location').style.display = 'block';
     }
 </script>
 {% endblock %}
