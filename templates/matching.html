@@ -2,43 +2,144 @@
 
 {% block title %}Red Line - Matching Donors{% endblock %}
 
+{% block extra_head %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+    #results-map { height: 400px; width: 100%; border-radius: var(--radius); box-shadow: var(--shadow-lg); margin-bottom: 2rem; z-index: 1; }
+    .distance-badge { display: inline-flex; align-items: center; gap: 4px; background: #dcfce7; color: #166534; padding: 4px 10px; border-radius: 20px; font-size: 0.85rem; font-weight: 600; }
+    .distance-badge.far { background: #fef3c7; color: #92400e; }
+    .distance-badge.very-far { background: #fee2e2; color: #991b1b; }
+    .rank-badge { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 50%; background: var(--primary); color: white; font-weight: 700; font-size: 0.9rem; }
+    .track-btn { display: inline-flex; align-items: center; gap: 5px; background: #0284c7; color: white; border: none; padding: 6px 14px; border-radius: 20px; font-size: 0.8rem; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+    .track-btn:hover { background: #0369a1; transform: scale(1.05); }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="page-header">
     <h1>Matching Donors for {{ recipient }}</h1>
-    <p>Available donors matching the required blood type.</p>
+    <p>Available donors matching the required blood type, sorted by nearest location (shortest path).</p>
 </div>
 
 <div class="container" style="margin-bottom: 4rem;">
+
     {% if donors %}
-        <div style="overflow-x: auto;">
-            <table class="data-table">
-                <thead>
-                    <tr>
-                        <th>Name</th>
-                        <th>Phone Number</th>
-                        <th>Blood Group</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for donor in donors %}
-                    <tr>
-                        <td>{{ donor.name }}</td>
-                        <td>{{ donor.phone }}</td>
-                        <td><span class="badge badge-client">{{ donor.blood_group }}</span></td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
+    <!-- Live Map showing donor locations relative to requester -->
+    <div id="results-map"></div>
+
+    <div style="overflow-x: auto;">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th style="width: 50px;">#</th>
+                    <th>Donor Name</th>
+                    <th>Phone Number</th>
+                    <th>Blood Group</th>
+                    <th>Distance</th>
+                    <th>Track</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for donor in donors %}
+                <tr>
+                    <td><span class="rank-badge">{{ loop.index }}</span></td>
+                    <td style="font-weight: 600;">{{ donor.name }}</td>
+                    <td>{{ donor.phone }}</td>
+                    <td><span class="badge badge-client">{{ donor.blood_group }}</span></td>
+                    <td>
+                        {% if donor.distance_km is not none %}
+                            {% if donor.distance_km < 10 %}
+                                <span class="distance-badge">&#x1F4CD; {{ donor.distance_km }} km</span>
+                            {% elif donor.distance_km < 50 %}
+                                <span class="distance-badge far">&#x1F4CD; {{ donor.distance_km }} km</span>
+                            {% else %}
+                                <span class="distance-badge very-far">&#x1F4CD; {{ donor.distance_km }} km</span>
+                            {% endif %}
+                        {% else %}
+                            <span style="color: var(--text-light); font-size: 0.85rem;">No location</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if donor.latitude and donor.longitude %}
+                            <button class="track-btn" onclick="trackDonor({{ donor.latitude }}, {{ donor.longitude }}, '{{ donor.name }}')">
+                                <span class="material-symbols-outlined" style="font-size: 16px;">near_me</span> Track
+                            </button>
+                        {% else %}
+                            <span style="color: var(--text-light); font-size: 0.85rem;">N/A</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
     {% else %}
         <div class="empty-state">
             <h3 style="margin-bottom: 1rem;">No Donors Found</h3>
             <p>Unfortunately, there are currently no matching donors available for this blood type.</p>
         </div>
     {% endif %}
-    
+
     <div style="text-align: center; margin-top: 2rem;">
         <a href="{{ url_for('index') }}" class="btn btn-secondary">Back to Home</a>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    {% if donors %}
+    // Initialize map showing all donor locations
+    var map = L.map('results-map').setView([13.0827, 80.2707], 10);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19, attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+
+    var bounds = [];
+
+    // Plot requester location (if available)
+    {% if req_lat and req_lng %}
+    var reqMarker = L.marker([{{ req_lat }}, {{ req_lng }}]).addTo(map);
+    reqMarker.bindPopup('<strong style="color: #0284c7;">&#x1F4CD; Your Location (Requester)</strong>').openPopup();
+    bounds.push([{{ req_lat }}, {{ req_lng }}]);
+    {% endif %}
+
+    // Plot each donor on the map
+    var donors = {{ donors | tojson }};
+    donors.forEach(function(d, i) {
+        if (d.latitude && d.longitude) {
+            var marker = L.marker([d.latitude, d.longitude]).addTo(map);
+            var distText = d.distance_km !== null ? '<br>Distance: ' + d.distance_km + ' km' : '';
+            marker.bindPopup(
+                '<div style="font-family: Poppins, sans-serif;">' +
+                '<h4 style="margin: 0 0 5px 0; color: #dc2626;">&#x1FA78; #' + (i+1) + ' ' + d.name + '</h4>' +
+                '<p style="margin: 0; font-size: 13px;"><strong>Blood:</strong> ' + d.blood_group + '</p>' +
+                '<p style="margin: 2px 0; font-size: 12px;">&#x1F4DE; ' + d.phone + '</p>' +
+                '<p style="margin: 2px 0; font-size: 12px; color: #16a34a;">' + distText + '</p>' +
+                '</div>'
+            );
+            bounds.push([d.latitude, d.longitude]);
+        }
+    });
+
+    // Fit map to show all markers
+    if (bounds.length > 1) {
+        map.fitBounds(bounds, { padding: [40, 40] });
+    } else if (bounds.length === 1) {
+        map.setView(bounds[0], 13);
+    }
+
+    // Track a specific donor - zoom and highlight
+    function trackDonor(lat, lng, name) {
+        map.setView([lat, lng], 16);
+        L.popup()
+            .setLatLng([lat, lng])
+            .setContent('<strong style="color: #dc2626;">&#x1FA78; Tracking: ' + name + '</strong>')
+            .openOn(map);
+        // Scroll to map
+        document.getElementById('results-map').scrollIntoView({ behavior: 'smooth' });
+    }
+    {% endif %}
+</script>
 {% endblock %}

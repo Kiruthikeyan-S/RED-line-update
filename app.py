@@ -1,9 +1,10 @@
-from flask import Flask, render_template, request, redirect, url_for, session, flash
+from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 from functools import wraps
 import os
+import math
 import pandas as pd
 
 app = Flask(__name__)
@@ -77,6 +78,20 @@ def admin_required(f):
             return redirect(url_for('index'))
         return f(*args, **kwargs)
     return decorated_function
+
+### HAVERSINE SHORTEST-DISTANCE ALGORITHM ###
+
+def haversine(lat1, lon1, lat2, lon2):
+    """Calculate the great-circle distance (km) between two GPS coordinates.
+    Uses the Haversine formula — the shortest path on a sphere."""
+    R = 6371  # Earth's radius in kilometers
+    d_lat = math.radians(lat2 - lat1)
+    d_lon = math.radians(lon2 - lon1)
+    a = (math.sin(d_lat / 2) ** 2 +
+         math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) *
+         math.sin(d_lon / 2) ** 2)
+    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+    return R * c
 
 ### ROUTES ###
 
@@ -157,7 +172,7 @@ def link():
 def map():
     return render_template('map.html')
 
-# Route for Receiving Blood Requests (Contact Page)
+# Route for Receiving Blood Requests (Contact Page) — with shortest-path sorting
 @app.route('/contact', methods=['GET', 'POST'])
 @login_required
 def contact():
@@ -169,6 +184,12 @@ def contact():
         phone = request.form.get('fphone', '').strip()
         blood_type = (request.form.get('ftype') or '').strip().upper()
         address = request.form.get('fdetails', '').strip()
+
+        # Get requester's real-time GPS coordinates
+        req_lat_str = request.form.get('latitude', '').strip()
+        req_lng_str = request.form.get('longitude', '').strip()
+        req_lat = float(req_lat_str) if req_lat_str else None
+        req_lng = float(req_lng_str) if req_lng_str else None
 
         # Handle file upload for ID proof securely
         upload_folder = os.path.join(app.root_path, 'uploads')
@@ -221,7 +242,16 @@ def contact():
                 required_cols = {"blood group", "name", "phone number"}
                 if required_cols.issubset(set(df.columns)):
                     matching_donors_df = df[df['blood group'].astype(str).str.upper().isin(donor_types)]
-                    matching_donors = matching_donors_df[['name', 'phone number', 'blood group']].to_dict(orient='records')
+                    for _, row in matching_donors_df.iterrows():
+                        donor_entry = {
+                            'name': row['name'],
+                            'phone': str(row.get('phone number', '')),
+                            'blood_group': str(row['blood group']).upper(),
+                            'latitude': float(row['latitude']) if 'latitude' in row and pd.notna(row.get('latitude')) else None,
+                            'longitude': float(row['longitude']) if 'longitude' in row and pd.notna(row.get('longitude')) else None,
+                            'distance_km': None
+                        }
+                        matching_donors.append(donor_entry)
         except Exception as e:
             print(f"Error reading donors file: {e}")
 
@@ -231,14 +261,32 @@ def contact():
             for d in db_donations:
                 matching_donors.append({
                     'name': d.name,
-                    'phone number': d.phone,
-                    'blood group': d.blood_type
+                    'phone': d.phone,
+                    'blood_group': d.blood_type,
+                    'latitude': d.latitude,
+                    'longitude': d.longitude,
+                    'distance_km': None
                 })
         except Exception as e:
             print(f"Error querying db donors: {e}")
 
+        # 3. SHORTEST-PATH SORTING: Calculate distance from requester to each donor
+        #    using Haversine formula and sort nearest first
+        if req_lat is not None and req_lng is not None:
+            for donor in matching_donors:
+                if donor.get('latitude') and donor.get('longitude'):
+                    dist = haversine(req_lat, req_lng, donor['latitude'], donor['longitude'])
+                    donor['distance_km'] = round(dist, 2)
+
+            # Sort: donors WITH location come first (nearest first), then donors without location
+            donors_with_loc = [d for d in matching_donors if d['distance_km'] is not None]
+            donors_without_loc = [d for d in matching_donors if d['distance_km'] is None]
+            donors_with_loc.sort(key=lambda x: x['distance_km'])
+            matching_donors = donors_with_loc + donors_without_loc
+
         # Render matching donors page with the results
-        return render_template("matching.html", donors=matching_donors, recipient=blood_type)
+        return render_template("matching.html", donors=matching_donors, recipient=blood_type,
+                               req_lat=req_lat, req_lng=req_lng)
 
     return render_template('contact.html')
 
@@ -270,6 +318,15 @@ def donate():
         lng_str = request.form.get('longitude', '').strip()
         latitude = float(lat_str) if lat_str else None
         longitude = float(lng_str) if lng_str else None
+
+        # Handle optional Doctor Certificate file upload
+        upload_folder = os.path.join(app.root_path, 'uploads')
+        os.makedirs(upload_folder, exist_ok=True)
+        file = request.files.get('id_proof')
+        if file and file.filename:
+            filename = secure_filename(file.filename)
+            if filename:
+                file.save(os.path.join(upload_folder, filename))
 
         # Save donation record
         new_donation = BloodDonation(
@@ -319,7 +376,6 @@ def donate():
 @app.route('/api/donors_location')
 @login_required
 def donors_location():
-    from flask import jsonify
     donations = BloodDonation.query.filter(BloodDonation.latitude.isnot(None), BloodDonation.longitude.isnot(None)).all()
     results = []
     for d in donations:
@@ -331,6 +387,22 @@ def donors_location():
             'longitude': d.longitude
         })
     return jsonify(results)
+
+@app.route('/api/track_donor/<int:donor_id>')
+@login_required
+def track_donor(donor_id):
+    """Real-time donor location tracking API — returns live GPS coordinates for a specific donor."""
+    donor = BloodDonation.query.get(donor_id)
+    if not donor or not donor.latitude or not donor.longitude:
+        return jsonify({'error': 'Donor location not available'}), 404
+    return jsonify({
+        'id': donor.id,
+        'name': donor.name,
+        'blood_type': donor.blood_type,
+        'phone': donor.phone,
+        'latitude': donor.latitude,
+        'longitude': donor.longitude
+    })
 
 @app.route('/profile')
 @login_required

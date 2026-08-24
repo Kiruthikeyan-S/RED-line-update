@@ -5,13 +5,17 @@
 {% block content %}
 <div class="container" style="max-width: 800px; padding: 3rem 1rem;">
     <div style="text-align: center; margin-bottom: 2.5rem;">
-        <h1 style="font-size: 2.5rem; font-weight: 700; color: var(--primary); margin-bottom: 0.5rem;">🚨 Submit Blood Request</h1>
+        <h1 style="font-size: 2.5rem; font-weight: 700; color: var(--primary); margin-bottom: 0.5rem;">&#x1F6A8; Submit Blood Request</h1>
         <p style="color: var(--text-light); font-size: 1.1rem;">Submit your emergency blood requirement to find compatible nearby donors.</p>
     </div>
 
     <div class="card" style="padding: 2.5rem;">
         <form action="{{ url_for('contact') }}" method="POST" enctype="multipart/form-data" onsubmit="return rValidate()">
-            
+
+            <!-- Hidden inputs to capture requester real-time GPS location -->
+            <input type="hidden" name="latitude" id="latitude">
+            <input type="hidden" name="longitude" id="longitude">
+
             <div class="form-group">
                 <label class="form-label" for="fname">Patient / Recipient Full Name *</label>
                 <input type="text" name="fname" id="fname" required class="form-control" placeholder="Enter recipient full name">
@@ -57,6 +61,12 @@
                 <textarea name="fdetails" id="fdetails" rows="4" required class="form-control" placeholder="Enter complete hospital address, room number, and emergency contact details"></textarea>
             </div>
 
+            <!-- Location status indicator -->
+            <div id="location-status" style="background: #fef3c7; padding: 0.8rem 1.2rem; border-radius: var(--radius-sm); border: 1px solid #fcd34d; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 8px; font-size: 0.9rem;">
+                <span class="material-symbols-outlined" style="font-size: 18px;">location_searching</span>
+                <span>Detecting your location to find nearest donors...</span>
+            </div>
+
             <div style="text-align: center; margin-top: 2rem;">
                 <button type="submit" class="btn btn-primary btn-lg" style="width: 100%; max-width: 400px; font-weight: 700; padding: 1rem 2rem; font-size: 1.2rem; box-shadow: 0 4px 15px rgba(220, 38, 38, 0.3);">
                     Find Compatible Donors
@@ -69,4 +79,24 @@
 
 {% block extra_scripts %}
 <script src="{{ url_for('static', filename='js/rvalid.js') }}"></script>
+<script>
+    // Automatically capture real-time requester GPS coordinates for shortest-path sorting
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(function(position) {
+            document.getElementById('latitude').value = position.coords.latitude;
+            document.getElementById('longitude').value = position.coords.longitude;
+            var statusEl = document.getElementById('location-status');
+            statusEl.style.background = '#dcfce7';
+            statusEl.style.borderColor = '#86efac';
+            statusEl.innerHTML = '<span class="material-symbols-outlined" style="font-size: 18px; color: #16a34a;">location_on</span><span style="color: #166534;"> Location detected! Donors will be sorted by nearest distance.</span>';
+        }, function(err) {
+            var statusEl = document.getElementById('location-status');
+            statusEl.style.background = '#fee2e2';
+            statusEl.style.borderColor = '#fca5a5';
+            statusEl.innerHTML = '<span class="material-symbols-outlined" style="font-size: 18px; color: #dc2626;">location_off</span><span style="color: #991b1b;"> Location unavailable. Donors will be shown without distance sorting.</span>';
+        });
+    } else {
+        document.getElementById('location-status').style.display = 'none';
+    }
+</script>
 {% endblock %}
